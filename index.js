@@ -1,51 +1,62 @@
-const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, Events, GatewayIntentBits, Collection } = require('discord.js')
 
-// Configurando o dotenv
+// dotenv
 const dotenv = require('dotenv')
 dotenv.config()
-const { TOKEN, CLIENT_ID, GUILD_ID } = process.env
+const { TOKEN } = process.env
 
-// Importação dos Comandos
-const fs = require('node:fs')
-const path = require('node:path')
-const commandPath = path.join(__dirname, "commands")
-const commandFiles = fs.readdirSync(commandPath).filter(file => file.endsWith(".js"))
+// importação dos comandos
+const fs = require("node:fs")
+const path = require("node:path")
+const commandsPath = path.join(__dirname, "commands")
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"))
 
-// Instanciando o Client
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-client.command = new Collection()
+const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+client.commands = new Collection()
 
-
-for (const file of commandFiles) {
-    const filePath = path.join(commandPath, file)
+for (const file of commandFiles){
+    const filePath = path.join(commandsPath, file)
     const command = require(filePath)
     if ("data" in command && "execute" in command) {
-        client.command.set(command.data.name, command)
-    } else {
-        console.log(`O "data" ou "execute" do comando a seguir está ausente\n${filePath}.`)
-    }
+        client.commands.set(command.data.name, command)
+    } else  {
+        console.log(`Esse comando em ${filePath} está com "data" ou "execute ausentes"`)
+    } 
 }
 
-// Login do Bot
+// Login do bot
 client.once(Events.ClientReady, c => {
-	console.log(`Parabéns! Login realizado como ${c.user.tag}`)
+	console.log(`Pronto! Login realizado como ${c.user.tag}`)
 });
-
-// Uso do Token para logar
 client.login(TOKEN)
 
-// Ouvindo as interações com o bot
-client.on(Events.InteractionCreate, async interaction => {
-    if(!interaction.isChatInputCommand()) return
+// Listener de interações com o bot
+client.on(Events.InteractionCreate, async interaction =>{
+    if (interaction.isStringSelectMenu()){
+        const selected = interaction.values[0]
+        if (selected == "javascript"){
+            await interaction.reply("Documentação do Javascript: https://developer.mozilla.org/en-US/docs/Web/JavaScript")
+        } else if (selected == "python"){
+            await interaction.reply("Documentação do Python: https://www.python.org")
+        } else if (selected == "PHP"){
+            await interaction.reply("Documentação do PHP: https://www.php.net/manual/pt_BR/index.php")
+        } else if (selected == "flet"){
+            await interaction.reply("Documentação do flet: https://flet.dev/docs/guides/python/getting-started/")
+        } else if (selected == "discordjs"){
+            await interaction.reply("Documentação do Discord.js: https://discordjs.guide/#before-you-begin")
+        }
+    }
+    if (!interaction.isChatInputCommand()) return
     const command = interaction.client.commands.get(interaction.commandName)
-    if(!command) {
-        console.error("Sinto muito, este comando não está no nosso repositório :/")
+    if (!command) {
+        console.error("Comando não encontrado")
         return
     }
     try {
         await command.execute(interaction)
-    } catch (error) {
+    } 
+    catch (error) {
         console.error(error)
-        await interaction.reply("Lamento, a execução deste comando não pode ser bem sucedida :/")
+        await interaction.reply("Houve um erro ao executar esse comando!")
     }
 })
